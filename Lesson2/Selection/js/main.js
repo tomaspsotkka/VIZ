@@ -47,6 +47,54 @@ async function loadData() {
     );
     console.log("Grouped Data:", groupedData);
 
+    const groupedByDate = d3.groups(
+         formattedData, 
+         datum => datum.date
+    );
+    console.log("Grouped by date:" ,groupedByDate);
+
+    const firstThreeDates = groupedByDate.slice(0, 3);
+    console.log("First 3 dates", groupedByDate.slice(0, 3));
+
+    const firstThreeValues = firstThreeDates.flatMap(([date, values]) => values);
+
+    const xScale = d3.scaleLinear()
+                    .domain([0, d3.max(firstThreeValues, datum => datum.value)])
+                    .range([100, 750]);
+    console.log("xScale domain:" ,xScale.domain());
+
+    const yScale = d3.scaleBand()
+                    .domain(firstThreeDates.map(([date]) => date))
+                    .range([40, 460])
+                    .padding(0.2);
+    console.log("yScale domain:", yScale.domain());
+    console.log(yScale.bandwidth());
+
+    const ySubScale = d3.scaleBand()
+                        .domain(colorScale.domain())
+                        .range([0, yScale.bandwidth()]);
+    console.log(ySubScale.bandwidth())
+
+    const dateGroups = svg.selectAll("g")
+                        .data(firstThreeDates)
+                        .join("g")
+                        .attr("transform", ([date]) => `translate(0, ${yScale(date)})`);
+
+    dateGroups.selectAll("rect")
+            .data(([date, values]) => values)
+            .join("rect")
+            .attr("x", xScale(0))
+            .attr("y", datum => ySubScale(datum.type))
+            .attr("width", datum => xScale(datum.value) - xScale(0))
+            .attr("height", ySubScale.bandwidth())
+            .attr("fill", datum => colorScale(datum.type));
+
+    dateGroups.append("text")
+            .text(([date]) => date.toLocaleDateString())
+            .attr("x", 0)
+            .attr("y", ySubScale.bandwidth() * 1.5);
+
+
     // b) Inspect each type
     groupedData.forEach(([type, values]) => {
     console.log(type, values);
